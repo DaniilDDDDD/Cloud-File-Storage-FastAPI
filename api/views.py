@@ -52,7 +52,10 @@ async def retrieve(
                 'download_link': f'http://{netloc}/api/files/{filename}/download/'
             }
         else:
-            raise HTTPException(status_code=403, detail='You do not have permissions to perform this action!')
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have permissions to perform this action!'
+            )
     else:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
@@ -89,7 +92,10 @@ async def retrieve_public(
                 'download_link': f'http://{netloc}/api/files/{filename}/download/'
             }
         else:
-            raise HTTPException(status_code=403, detail='You do not have permissions to perform this action!')
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have permissions to perform this action!'
+            )
     else:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
@@ -129,7 +135,10 @@ async def update(
             await file.update(access=access)
             return file
         else:
-            raise HTTPException(status_code=403, detail='You do not have permissions to perform this action!')
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have permissions to perform this action!'
+            )
     else:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
@@ -149,7 +158,9 @@ async def delete(
             await file.delete()
             return Response(status_code=204)
         else:
-            raise HTTPException(status_code=403, detail='You do not have permissions to perform this action!')
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have permissions to perform this action!')
     else:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
