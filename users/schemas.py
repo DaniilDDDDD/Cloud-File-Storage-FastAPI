@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi_users import models
 from pydantic import BaseModel, EmailStr
+import uuid
 
 
 class User(models.BaseUser):
@@ -26,7 +27,4 @@ class UserDB(User, models.BaseUserDB):
 
 
 class UserListSchema(BaseModel):
-    id: int
-    email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
+    id: uuid.UUID

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from users.schemas import UserListSchema
 
@@ -10,10 +10,6 @@ class FileListSchema(BaseModel):
     download_count: int
     file: str
 
-
-class FileCreateSchema(BaseModel):
-    id: int
-    author: str
-    access: str
-    download_count: int
-    file: str
+    @validator('author')
+    def author_validator(cls, value):
+        return str(value.id)
