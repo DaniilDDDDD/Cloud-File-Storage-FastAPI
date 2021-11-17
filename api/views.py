@@ -14,7 +14,10 @@ from users.routers import current_user
 
 from .models import File
 from .schemas import FileListSchema
-from .utils import save_file
+from .utils import (
+    save_file, get_user_files, get_public_files,
+    get_file_or_none_by_id, get_file_or_none_by_filename
+)
 
 router = APIRouter(prefix='/files')
 
@@ -24,12 +27,7 @@ async def list(user: User = Depends(current_user)):
     """
     Only for authenticated users. Returns list of public or yours files.
     """
-    files = await File.objects.filter(
-        ormar.or_(access='public', author=str(user.id))
-    ).order_by(
-        'download_count'
-    ).all()
-    return files
+    return await get_user_files(user)
 
 
 @router.get('/{file_pk}/')
@@ -41,23 +39,22 @@ async def retrieve(
     """
     Only for authenticated users. Returns links on concrete public or your file.
     """
-    file = await File.objects.get_or_none(id=file_pk)
-    if file:
-        if file.access == 'public' or str(file.author) == str(user.id):
-            netloc = request.url.netloc
-            filename = file.file.split('/')[-1].split('.')[0]
-            return {
-                'id': file.id,
-                'view_link': f'http://{netloc}/api/files/{filename}/view/',
-                'download_link': f'http://{netloc}/api/files/{filename}/download/'
-            }
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail='You do not have permissions to perform this action!'
-            )
-    else:
+    file = await get_file_or_none_by_id(file_pk)
+    if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+
+    if file.access == 'public' or str(file.author) == str(user.id):
+        netloc = request.url.netloc
+        filename = file.file.split('/')[-1].split('.')[0]
+        return {
+            'id': file.id,
+            'view_link': f'http://{netloc}/api/files/{filename}/view/',
+            'download_link': f'http://{netloc}/api/files/{filename}/download/'
+        }
+    raise HTTPException(
+        status_code=403,
+        detail='You do not have permissions to perform this action!'
+    )
 
 
 @router.get('/public/', response_model=List[FileListSchema])
@@ -65,12 +62,7 @@ async def list_public():
     """
     Returns list of public or yours files.
     """
-    files = await File.objects.filter(
-        access='public'
-    ).order_by(
-        'download_count'
-    ).all()
-    return files
+    return await get_public_files()
 
 
 @router.get('/public/{file_pk}/')
@@ -81,23 +73,21 @@ async def retrieve_public(
     """
     Returns links on concrete public file.
     """
-    file = await File.objects.get_or_none(id=file_pk)
-    if file:
-        if file.access == 'public':
-            netloc = request.url.netloc
-            filename = file.file.split('/')[-1].split('.')[0]
-            return {
-                'id': file.id,
-                'view_link': f'http://{netloc}/api/files/{filename}/view/',
-                'download_link': f'http://{netloc}/api/files/{filename}/download/'
-            }
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail='You do not have permissions to perform this action!'
-            )
-    else:
-        raise HTTPException(status_code=404, detail='File does not exist!')
+    file = await get_file_or_none_by_id(file_pk)
+    if not file:
+        raise HTTPException(
+            status_code=403,
+            detail='You do not have permissions to perform this action!'
+        )
+    if file.access == 'public':
+        netloc = request.url.netloc
+        filename = file.file.split('/')[-1].split('.')[0]
+        return {
+            'id': file.id,
+            'view_link': f'http://{netloc}/api/files/{filename}/view/',
+            'download_link': f'http://{netloc}/api/files/{filename}/download/'
+        }
+    raise HTTPException(status_code=404, detail='File does not exist!')
 
 
 @router.post('/', response_model=FileListSchema)
@@ -129,18 +119,17 @@ async def update(
     """
     Only for authenticated users. Updates access of your file.
     """
-    file = await File.objects.get_or_none(id=file_pk)
-    if file:
-        if str(file.author) == str(user.id):
-            await file.update(access=access)
-            return file
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail='You do not have permissions to perform this action!'
-            )
-    else:
+    file = await get_file_or_none_by_id(file_pk)
+    if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+
+    if str(file.author) == str(user.id):
+        return await file.update(access=access)
+
+    raise HTTPException(
+        status_code=403,
+        detail='You do not have permissions to perform this action!'
+    )
 
 
 @router.delete('/{file_pk}/')
@@ -151,18 +140,16 @@ async def delete(
     """
     Only for authenticated users. Deletes one of your files.
     """
-    file = await File.objects.get_or_none(id=file_pk)
-    if file:
-        if str(file.author) == str(user.id):
-            os.remove(file.file)
-            await file.delete()
-            return Response(status_code=204)
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail='You do not have permissions to perform this action!')
-    else:
+    file = await get_file_or_none_by_id(file_pk)
+    if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+    if str(file.author) == str(user.id):
+        os.remove(file.file)
+        await file.delete()
+        return Response(status_code=204)
+    raise HTTPException(
+        status_code=403,
+        detail='You do not have permissions to perform this action!')
 
 
 @router.get('/{file_name}/view/', response_class=FileResponse)
@@ -170,11 +157,10 @@ async def view(file_name: str):
     """
     Allows you to view file.
     """
-    file = await File.objects.get_or_none(file__contains=file_name)
-    if file:
-        return file.file
-    else:
+    file = await get_file_or_none_by_filename(file_name)
+    if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+    return file.file
 
 
 @router.get('/{file_name}/download/')
@@ -182,8 +168,7 @@ async def download(file_name: str):
     """
     Allows you to download file.
     """
-    file = await File.objects.get_or_none(file__contains=file_name)
-    if file:
-        return DownloadResponse(file.file, filename=file.file.split('/')[-1])
-    else:
+    file = await get_file_or_none_by_filename(file_name)
+    if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+    return DownloadResponse(file.file, filename=file.file.split('/')[-1])
