@@ -28,7 +28,7 @@ async def save_file(
     filename = f'media/{author.id}/{uuid.uuid4().hex}.{ext}'
     background_tasks.add_task(write_file, author.id, filename, file)
     return await File.objects.create(
-        author=author.id,
+        author=author,
         access=access,
         file=filename,
         download_count=download_count

@@ -1,30 +1,17 @@
 from typing import Optional
-from fastapi_users import models
-from pydantic import BaseModel, EmailStr
-import uuid
+from pydantic import BaseModel
 
 
-class User(models.BaseUser):
-    first_name: Optional[str]
+class UserSchema(BaseModel):
+    username: str
+    email: str
     last_name: Optional[str]
-
-
-class UserCreate(models.BaseUserCreate):
-    # is_active: Optional[bool] = None
-    # is_superuser: Optional[bool] = None
-    # is_verified: Optional[bool] = None
     first_name: Optional[str]
-    last_name: Optional[str]
 
 
-class UserUpdate(models.BaseUserUpdate):
-    first_name: Optional[str]
-    last_name: Optional[str]
+class UserListSchema(UserSchema):
+    id: int
 
 
-class UserDB(User, models.BaseUserDB):
-    pass
-
-
-class UserListSchema(BaseModel):
-    id: uuid.UUID
+class UserCreateSchema(UserSchema):
+    password: str

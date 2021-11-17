@@ -1,9 +1,26 @@
-from starlette.requests import Request
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 
-from .schemas import (
-    UserDB
+from .auth import (
+    authenticate_user, credentials_error,
+    create_token,
 )
+from .schemas import UserCreateSchema, UserListSchema
+from .utils import create_user
+
+router = APIRouter(prefix='/auth')
 
 
-def on_after_register(user: UserDB, request: Request):
-    pass
+@router.post('/token')
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = await authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise credentials_error
+    return create_token(user.username)
+
+
+@router.post('/register', response_model=UserListSchema)
+async def register(
+        data: UserCreateSchema
+):
+    return await create_user(**data.dict())

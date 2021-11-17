@@ -1,19 +1,17 @@
+from typing import Optional
 import ormar
-from fastapi_users.db import OrmarBaseUserModel, OrmarUserDatabase
+from pydantic import EmailStr
 
 from database import MainMeta
-from users.schemas import UserDB
 
 
-class User(OrmarBaseUserModel):
+class User(ormar.Model):
     class Meta(MainMeta):
         pass
 
-    first_name = ormar.String(max_length=500, nullable=True)
-    last_name = ormar.String(max_length=500, nullable=True)
-
-    def __str__(self):
-        return str(self.id)
-
-
-user_db = OrmarUserDatabase(UserDB, User)
+    id: int = ormar.Integer(primary_key=True)
+    username: str = ormar.String(max_length=250, nullable=False)
+    email: EmailStr = ormar.String(max_length=250, nullable=False)
+    first_name: Optional[str] = ormar.String(max_length=250, nullable=True)
+    last_name: Optional[str] = ormar.String(max_length=250, nullable=True)
+    password: str = ormar.String(max_length=1000, nullable=False)

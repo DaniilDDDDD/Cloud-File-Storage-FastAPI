@@ -1,6 +1,5 @@
 import os
-import ormar
-from typing import List
+from typing import List, Optional
 from fastapi import (
     APIRouter, Depends, File as _File,
     UploadFile, BackgroundTasks, HTTPException,
@@ -10,9 +9,8 @@ from starlette.responses import FileResponse as DownloadResponse
 from fastapi.responses import Response, FileResponse
 
 from users.models import User
-from users.routers import current_user
+from users.auth import get_current_user, get_current_user_or_none
 
-from .models import File
 from .schemas import FileListSchema
 from .utils import (
     save_file, get_user_files, get_public_files,
@@ -23,18 +21,25 @@ router = APIRouter(prefix='/files')
 
 
 @router.get('/', response_model=List[FileListSchema])
-async def list(user: User = Depends(current_user)):
-    """
-    Only for authenticated users. Returns list of public or yours files.
-    """
+async def list(user=Depends(get_current_user_or_none)):
+    if not user:
+        return await get_public_files()
     return await get_user_files(user)
+
+
+# @router.get('/', response_model=List[FileListSchema])
+# async def list(user: User = Depends(get_current_user_or_none)):
+#     """
+#     Only for authenticated users. Returns list of public or yours files.
+#     """
+#     return await get_user_files(user)
 
 
 @router.get('/{file_pk}/')
 async def retrieve(
         file_pk: int,
         request: Request,
-        user: User = Depends(current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Only for authenticated users. Returns links on concrete public or your file.
@@ -57,12 +62,12 @@ async def retrieve(
     )
 
 
-@router.get('/public/', response_model=List[FileListSchema])
-async def list_public():
-    """
-    Returns list of public or yours files.
-    """
-    return await get_public_files()
+# @router.get('/public/', response_model=List[FileListSchema])
+# async def list_public():
+#     """
+#     Returns list of public or yours files.
+#     """
+#     return await get_public_files()
 
 
 @router.get('/public/{file_pk}/')
@@ -93,7 +98,7 @@ async def retrieve_public(
 @router.post('/', response_model=FileListSchema)
 async def create(
         background_tasks: BackgroundTasks,
-        user: User = Depends(current_user),
+        user: User = Depends(get_current_user),
         file: UploadFile = _File(...),
         access: str = Form('only_author')
 ):
@@ -114,7 +119,7 @@ async def create(
 async def update(
         file_pk: int,
         access: str = Form('only_author'),
-        user: User = Depends(current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Only for authenticated users. Updates access of your file.
@@ -135,7 +140,7 @@ async def update(
 @router.delete('/{file_pk}/')
 async def delete(
         file_pk: int,
-        user: User = Depends(current_user)
+        user: User = Depends(get_current_user)
 ):
     """
     Only for authenticated users. Deletes one of your files.
@@ -171,4 +176,5 @@ async def download(file_name: str):
     file = await get_file_or_none_by_filename(file_name)
     if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
+    await file.update(download_count=file.download_count + 1)
     return DownloadResponse(file.file, filename=file.file.split('/')[-1])
