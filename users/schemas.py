@@ -15,3 +15,7 @@ class UserListSchema(UserSchema):
 
 class UserCreateSchema(UserSchema):
     password: str
+
+
+class UserIdSchema(BaseModel):
+    id: int

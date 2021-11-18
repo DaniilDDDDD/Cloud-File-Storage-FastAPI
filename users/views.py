@@ -6,7 +6,7 @@ from .auth import (
     create_token,
 )
 from .schemas import UserCreateSchema, UserListSchema
-from .utils import create_user
+from .models import User
 
 router = APIRouter(prefix='/auth')
 
@@ -23,4 +23,4 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def register(
         data: UserCreateSchema
 ):
-    return await create_user(**data.dict())
+    return await User.create_user(**data.dict())
