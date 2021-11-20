@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.app import app
-
+from conftest import app
 from users.models import User
 
 
@@ -17,53 +16,47 @@ class FilesClient(TestClient):
     def retrieve_public(self, _id: int):
         return self.get(f'{self.path}/public/{_id}/')
 
-    def list(self):
+    def list(self, token: str):
         return self.get(
             f'{self.path}/',
             headers={
-                'Authorization': f'Bearer {User.get_test_user_token()}'
+                'Authorization': f'Bearer {token}'
             }
         )
 
-    def retrieve(self, _id: int):
+    def retrieve(self, _id: int, token: str):
         return self.get(
             f'{self.path}/{_id}',
             headers={
-                'Authorization': f'Bearer {User.get_test_user_token()}'
+                'Authorization': f'Bearer {token}'
             }
         )
 
-    def create(self, data: dict):
+    def create(self, access: str, file: str, token: str):
         return self.post(
             f'{self.path}/',
-            data={'access': data['access']},
-            files={'file': open(data['file'], 'rb')},
+            data={'access': access},
+            files={'file': open(file, 'rb')},
             headers={
-                'Authorization': f'Bearer {User.get_test_user_token()}'
+                'Authorization': f'Bearer {token}'
             }
         )
 
-    def update(self, _id: int, access: str):
+    def update(self, _id: int, access: str, token: str):
         return self.patch(
             f'{self.path}/{_id}/',
             data={
                 'access': access
             },
             headers={
-                'Authorization': f'Bearer {User.get_test_user_token()}'
+                'Authorization': f'Bearer {token}'
             }
         )
 
-    def delete_file(self, _id: int):
+    def delete_file(self, _id: int, token: str):
         return self.delete(
             f'{self.path}/{_id}/',
             headers={
-                'Authorization': f'Bearer {User.get_test_user_token()}'
+                'Authorization': f'Bearer {token}'
             }
         )
-
-    def view(self, filename: str):
-        return self.get(f'{self.path}/{filename}/view/')
-
-    def download(self, filename: str):
-        return self.get(f'{self.path}/{filename}/download')

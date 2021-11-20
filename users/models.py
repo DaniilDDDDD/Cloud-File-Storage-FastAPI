@@ -4,7 +4,6 @@ from pydantic import EmailStr
 from passlib.context import CryptContext
 
 from core.database import MainMeta
-from users.auth import create_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -13,12 +12,18 @@ class User(ormar.Model):
     class Meta(MainMeta):
         pass
 
-    id: int = ormar.Integer(primary_key=True)
-    username: str = ormar.String(max_length=250, nullable=False)
-    email: EmailStr = ormar.String(max_length=250, nullable=False)
-    first_name: Optional[str] = ormar.String(max_length=250, nullable=True)
-    last_name: Optional[str] = ormar.String(max_length=250, nullable=True)
-    password: str = ormar.String(max_length=1000, nullable=False)
+    id: int = ormar.Integer(
+        primary_key=True)
+    username: str = ormar.String(
+        max_length=250, nullable=False, unique=True)
+    email: EmailStr = ormar.String(
+        max_length=250, nullable=False, unique=True)
+    first_name: Optional[str] = ormar.String(
+        max_length=250, nullable=True)
+    last_name: Optional[str] = ormar.String(
+        max_length=250, nullable=True)
+    password: str = ormar.String(
+        max_length=1000, nullable=True)
 
     @staticmethod
     def get_hashed_password(password: str) -> str:
@@ -41,24 +46,16 @@ class User(ormar.Model):
             first_name: str = None,
             last_name: str = None
     ):
-        return await User.objects.get_or_create(
+        user = await User.objects.get_or_none(
             username=username,
-            email=email,
-            password=cls.get_hashed_password(password),
-            first_name=first_name,
-            last_name=last_name
+            email=email
         )
-
-    @classmethod
-    async def get_test_user(cls):
-        return await User.objects.get_or_create(
-            username='test.user',
-            email='user@test.com',
-            password=cls.get_hashed_password('qwerty1234')
-        )
-
-    @classmethod
-    async def get_test_user_token(cls):
-        return create_token(
-            await cls.get_test_user()
-        )['access_token']
+        if not user:
+            return await User.objects.create(
+                username=username,
+                email=email,
+                password=cls.get_hashed_password(password),
+                first_name=first_name,
+                last_name=last_name
+            )
+        return None

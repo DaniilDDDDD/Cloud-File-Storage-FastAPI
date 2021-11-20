@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.app import app
+from conftest import app
 from ..schemas import UserCreateSchema
 
 

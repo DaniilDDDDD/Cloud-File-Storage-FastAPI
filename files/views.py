@@ -96,7 +96,7 @@ async def retrieve(
     if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
-    if file.access == 'public' or str(file.author) == str(user.id):
+    if file.access == 'public' or file.author == user:
         netloc = request.url.netloc
         filename = file.file.split('/')[-1].split('.')[0]
         return {
@@ -115,7 +115,7 @@ async def create(
         background_tasks: BackgroundTasks,
         user: User = Depends(get_current_user),
         file: UploadFile = _File(...),
-        access: str = Form('only_author')
+        access: str = Form('private')
 ):
     """
     Only for authenticated users. Creates new file.
@@ -133,7 +133,7 @@ async def create(
 @router.patch('/{file_pk}/', response_model=FileListSchema)
 async def update(
         file_pk: int,
-        access: str = Form('only_author'),
+        access: str = Form('private'),
         user: User = Depends(get_current_user)
 ):
     """
@@ -143,13 +143,13 @@ async def update(
     if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
 
-    if str(file.author) == str(user.id):
-        return await file.update(access=access)
+    if not file.author == user:
+        raise HTTPException(
+            status_code=403,
+            detail='You do not have permissions to perform this action!'
+        )
 
-    raise HTTPException(
-        status_code=403,
-        detail='You do not have permissions to perform this action!'
-    )
+    return await file.update(access=access)
 
 
 @router.delete('/{file_pk}/')
@@ -163,10 +163,11 @@ async def delete(
     file = await File.get_file_or_none_by_id(file_pk)
     if not file:
         raise HTTPException(status_code=404, detail='File does not exist!')
-    if str(file.author) == str(user.id):
-        os.remove(file.file)
-        await file.delete()
-        return Response(status_code=204)
-    raise HTTPException(
-        status_code=403,
-        detail='You do not have permissions to perform this action!')
+    if not file.author == user:
+        raise HTTPException(
+            status_code=403,
+            detail='You do not have permissions to perform this action!')
+
+    os.remove(file.file)
+    await file.delete()
+    return Response(status_code=204)
