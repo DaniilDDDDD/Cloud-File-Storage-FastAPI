@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 
 from alembic import context
 
-from core.migration_models import MainMeta, DATABASE_URL
+from core.models import MainMeta, DATABASE_URL
 
 
 sys.path = ['', '..'] + sys.path[1:]

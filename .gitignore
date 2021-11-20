@@ -1,4 +1,7 @@
-/media/
 .idea
+.pytest_cache
+
 *.env
 *.db
+
+/media/

@@ -1,7 +1,10 @@
+import uvicorn
 from fastapi import FastAPI
 
-from .database import database
-from .routes import router
+from core.database import database
+from core.routes import router
+
+from admin.admin_setup import admin_start
 
 app = FastAPI()
 app.state.database = database
@@ -22,3 +25,7 @@ async def shutdown() -> None:
 
 
 app.include_router(router, prefix='/api')
+
+if __name__ == '__main__':
+    # admin_start()
+    uvicorn.run(app)
