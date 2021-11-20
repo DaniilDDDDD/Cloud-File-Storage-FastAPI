@@ -4,6 +4,7 @@ from pydantic import EmailStr
 from passlib.context import CryptContext
 
 from core.database import MainMeta
+from users.auth import create_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -37,8 +38,8 @@ class User(ormar.Model):
             username: str,
             email: str,
             password: str,
-            first_name: Optional[str],
-            last_name: Optional[str]
+            first_name: str = None,
+            last_name: str = None
     ):
         return await User.objects.get_or_create(
             username=username,
@@ -48,4 +49,16 @@ class User(ormar.Model):
             last_name=last_name
         )
 
+    @classmethod
+    async def get_test_user(cls):
+        return await User.objects.get_or_create(
+            username='test.user',
+            email='user@test.com',
+            password=cls.get_hashed_password('qwerty1234')
+        )
 
+    @classmethod
+    async def get_test_user_token(cls):
+        return create_token(
+            await cls.get_test_user()
+        )['access_token']

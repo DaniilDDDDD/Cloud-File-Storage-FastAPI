@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 
-from .database import database, metadata, engine
+from .database import database
 from .routes import router
 
 app = FastAPI()
-metadata.create_all(engine)
 app.state.database = database
 
 

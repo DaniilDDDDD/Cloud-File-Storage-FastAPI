@@ -120,7 +120,7 @@ async def create(
     """
     Only for authenticated users. Creates new file.
     """
-    file = await File.save_file(
+    file = await File.create_file(
         file=file,
         author=user,
         access=access,

@@ -22,7 +22,7 @@ class File(ormar.Model):
     file: str = ormar.String(max_length=1000)
 
     @classmethod
-    async def save_file(
+    async def create_file(
             cls,
             file: UploadFile,
             author: User,
